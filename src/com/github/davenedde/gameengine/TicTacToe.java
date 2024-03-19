@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Scanner;
 
 public class TicTacToe {
-    private static final int TRAIN_COUNT = 500_000;
+    //private static final int TRAIN_COUNT = 500_000;
     
     public static void main(String[] args) throws IOException {
         System.out.println("Tic Tac Toe\n");
@@ -52,9 +52,9 @@ public class TicTacToe {
 
 
     private static void interact(Scanner stdInScanner, BoardRewards boardRewards, Board startingBoard, Player humanPlayer) {
-        boolean running = true;
+        //boolean running = true;
         Board currentBoard = startingBoard;
-        Player computerPlayer = Player.O;
+        //Player computerPlayer = Player.O;
 
         while (!currentBoard.getWinner().isPresent()) {
             System.out.println("\n\nCurrent game: " + currentBoard);
@@ -109,7 +109,7 @@ public class TicTacToe {
     }
 
 
-    private static Position getBestMove(BoardRewards boardRewards, Board board) {
+private static Position getBestMove(BoardRewards boardRewards, Board board) {
         Double maxValue = -Double.MAX_VALUE;
         Position bestMove = null;
 

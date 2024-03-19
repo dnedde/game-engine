@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 class Board {
     static final int ROWS = 3;
@@ -17,11 +18,11 @@ class Board {
 
     public Board(Player currentPlayer) {
         this.currentPlayer = currentPlayer;
-        IntStream.range(0, ROWS).forEach(row -> {
-                IntStream.range(0, COLS).forEach(col -> {
-                        spaces[row][col] = Marker.EMPTY;
-                    });
-            });
+        for (int row = 0; row < spaces.length; row++) {
+            for (int col = 0; col < spaces[row].length; col++) {
+                spaces[row][col] = Marker.EMPTY;
+            }
+        }
     }
 
     private Board(Board sourceBoard) {
@@ -31,6 +32,11 @@ class Board {
                         spaces[row][col] = sourceBoard.getMarker(row, col);
                     });
             });
+    }
+
+    private Board(Player currentPlayer, Marker[][] spaces) {
+        this.currentPlayer = currentPlayer;
+        this.spaces = spaces;
     }
 
     private String toString = null;
@@ -64,6 +70,73 @@ class Board {
         return currentPlayer.getOtherPlayer();
     }
 
+
+    /**
+     * Return a list of boards that are functionally equivilent to this board
+     * through reflection and rotation
+     */
+    public List<Board> getEquivilentBoards() {
+        Board rotated90 = this.rotate90DegreesClockwise();
+        Board rotated180 = rotated90.rotate90DegreesClockwise();
+        Board rotated270 = rotated180.rotate90DegreesClockwise();
+        return Stream.of(
+            rotated90,
+            rotated90.reflectXAxis(),
+            rotated90.reflectYAxis(),
+            rotated180,
+            rotated180.reflectXAxis(),
+            rotated180.reflectYAxis(),
+            rotated270,
+            rotated270.reflectXAxis(),
+            rotated270.reflectYAxis())
+            .distinct()
+            .collect(Collectors.toList());
+    }
+
+    /** Return a new Board that has been rotated 90 degrees clockwise */
+    private Board rotate90DegreesClockwise() {
+        int rows = spaces.length;
+        int cols = spaces[0].length;
+        Marker[][] rotatedSpaces = new Marker[cols][rows];
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                rotatedSpaces[col][rows - 1 - row] = spaces[row][col];
+            }
+        }
+
+        return new Board(currentPlayer, rotatedSpaces);
+    }
+
+    /** Return a new Board that has been relected on the Y axis */
+    private Board reflectYAxis() {
+        int rows = spaces.length;
+        int cols = spaces[0].length;
+        Marker[][] reflectedSpaces = new Marker[cols][rows];
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                reflectedSpaces[row][cols - 1 - col] = spaces[row][col];
+            }
+        }
+
+        return new Board(currentPlayer, reflectedSpaces);
+    }
+
+    /** Return a new Board that has been relected on the X axis */
+    private Board reflectXAxis() {
+        int rows = spaces.length;
+        int cols = spaces[0].length;
+        Marker[][] reflectedSpaces = new Marker[cols][rows];
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                reflectedSpaces[rows - 1 - row][col] = spaces[row][col];
+            }
+        }
+
+        return new Board(currentPlayer, reflectedSpaces);
+    }
 
     public Board playMove(Position pos) {
         Board nextBoard = new Board(this);
@@ -152,7 +225,16 @@ class Board {
     }
 
     public int hashCode() {
-        return toString().hashCode();
+        final int PRIME = 31; // Prime number used as a multiplier
+        int result = 1;
+
+        for (int row = 0; row < spaces.length; row++) {
+            for (int col = 0; col < spaces[row].length; col++) {
+                result = PRIME * result + spaces[row][col].ordinal();
+            }
+        }
+
+        return PRIME * result + currentPlayer.ordinal();
     }
 
     public boolean equals(Object obj) {

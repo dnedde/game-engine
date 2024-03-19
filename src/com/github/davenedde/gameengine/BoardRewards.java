@@ -1,14 +1,18 @@
 package com.github.davenedde.gameengine;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Maintains the reward that a board + player whose turn it (current player) is gives for a specific player.
+ * Maintains a map of board + player whose turn it (current player) to reward.
  */
 class BoardRewards {
     /** Reward always matches the player whose turn it is */
     private Map<Board,Double> boardPlayerTurnToValueMap = new HashMap<>();
+
+    private Map<Board,List<Board>> boardToEquivilentBoardsMap = new HashMap<>();
+
 
     public void clear() {
         boardPlayerTurnToValueMap.clear();
@@ -27,7 +31,17 @@ class BoardRewards {
         return 1.0 - getRewardCurrentPlayer(board);
     }
 
+    /** Store reward for player.  Also store reward for the same board in other orientations */
     public void setRewardCurrentPlayer(Board board, double value) {
         boardPlayerTurnToValueMap.put(board, value);
+
+        List<Board> equivilentBoards = boardToEquivilentBoardsMap.get(board);
+        if (equivilentBoards == null) {
+            equivilentBoards = board.getEquivilentBoards();
+            boardToEquivilentBoardsMap.put(board, equivilentBoards);
+        }
+
+        equivilentBoards.forEach( // Store values for equivilent boards to speed training
+            equivilentBoard -> boardPlayerTurnToValueMap.put(equivilentBoard, value));
     }
 }

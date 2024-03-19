@@ -13,7 +13,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 class TrainingEngine {
-    /** Rate by which board rewards are propagates back up the move tre */
+    /** Rate by which board rewards are propagated back up the move tree */
     private static double TRAINING_RATE = 0.4;
 
     /** Starting percentage of the number of random moves that will be made */
@@ -25,12 +25,12 @@ class TrainingEngine {
     private static final Board STARTING_BOARD = new Board(Player.O);
     private static final List<Position> STARTING_POSITIONS = STARTING_BOARD.getEmptyPositions();
 
-    long MAX_GAMES = 300_000;
-    long MAX_O_TRAINING_GAMES = (long)(MAX_GAMES * 0.6);
-    long MAX_X_TRAINING_GAMES = (long)(MAX_GAMES * 0.8);
+    long MAX_TRAINING_GAMES = 600_000;
+    long MAX_O_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.6);
+    long MAX_X_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.8);
     long MAX_BACKUP_GAMES = MAX_O_TRAINING_GAMES;
 
-    
+    /** Track number of random moves for logging */
     private long playerOMadeRandomMove = 0;
     private long playerXMadeRandomMove = 0;
 
@@ -62,14 +62,14 @@ class TrainingEngine {
         double[] movingRewardSum = new double[9];
 
         try (PrintWriter out = new PrintWriter(Files.newOutputStream(
-                    Paths.get("/Users/davidned/weights.tsv")), true)) {
+                    Paths.get("weights.tsv")), true)) {
 
             //printInitialMoveWeightHeader(out);
             System.out.println(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", "i", "oWins", "xWins", "draws", "oStreak", "oRand", "xRand", "ExplRate"));
 
 
             trainingGameIndex = 0;
-            while (trainingGameIndex < MAX_GAMES) {
+            while (trainingGameIndex < MAX_TRAINING_GAMES) {
                 GameResult gameResult = playGame();
                 currentExploratoryRate *= EXPLORATORY_DECAY_RATE;
 
@@ -78,7 +78,7 @@ class TrainingEngine {
                     case O: oWins++; break;
                     case X: xWins++; break;
                 }
-                
+
                 for (int iPos = 0; iPos < STARTING_POSITIONS.size(); iPos++) {
                     movingRewardSum[iPos] += boardRewards.getRewardOtherPlayer(STARTING_BOARD.playMove(STARTING_POSITIONS.get(iPos)));
                 }
@@ -98,12 +98,15 @@ class TrainingEngine {
 
                     if (xWins == 0) {
                         oPerfectStreak++;
+                        if (oPerfectStreak > 2) {
+                            break;
+                        }
                     } else {
                         oPerfectStreak = 0;
                         if (trainingGameIndex > MAX_O_TRAINING_GAMES) {
                             oLossesAfterTraining++;
                             if (oLossesAfterTraining > 5) {
-                                break;
+                                //break;
                             }
                         }
                     }
