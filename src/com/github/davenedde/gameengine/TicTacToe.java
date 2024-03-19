@@ -1,4 +1,6 @@
-package com.github.davenedde.gameengine;/*
+package com.github.davenedde.gameengine;
+
+/*
 JAVA_HOME=$(/usr/libexec/java_home)
 $JAVA_HOME/bin/javac com.github.davenedde.gameengine.TicTacToe.java
 $JAVA_HOME/bin/java com.github.davenedde.gameengine.TicTacToe
@@ -73,8 +75,8 @@ public class TicTacToe {
 
             double reward = boardRewards.getRewardOtherPlayer(currentBoard);
 
-            System.out.println(String.format("com.github.davenedde.gameengine.Player %s's move of %s gives a reward of %.2f",
-                    currentBoard.getCurrentPlayer().getOtherPlayer(), move, reward));
+            System.out.printf("com.github.davenedde.gameengine.Player %s's move of %s gives a reward of %.2f%n",
+                    currentBoard.getCurrentPlayer().getOtherPlayer(), move, reward);
         }
 
         System.out.println("\n\nGame is over!  Winner is: " + currentBoard.getWinner().get());
@@ -110,12 +112,12 @@ public class TicTacToe {
 
 
 private static Position getBestMove(BoardRewards boardRewards, Board board) {
-        Double maxValue = -Double.MAX_VALUE;
+        double maxValue = -Double.MAX_VALUE;
         Position bestMove = null;
 
         for (Position emptyPosition : board.getEmptyPositions()) {
             Board nextBoard = board.playMove(emptyPosition);
-            Double nextMoveValue = boardRewards.getRewardOtherPlayer(nextBoard);
+            double nextMoveValue = boardRewards.getRewardOtherPlayer(nextBoard);
 
             if (nextMoveValue > maxValue) {
                 maxValue = nextMoveValue;

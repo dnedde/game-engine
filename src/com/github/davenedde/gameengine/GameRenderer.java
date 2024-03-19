@@ -29,8 +29,8 @@ class GameRenderer {
             return weight;
         }
 
-        Position pos;
-        Double weight;
+        private final Position pos;
+        private final Double weight;
 
         public PosWeight(Position pos, Double weight) {
             this.pos = pos;
@@ -52,7 +52,7 @@ class GameRenderer {
             .sorted(Comparator
                 .comparing(PosWeight::getWeight, Collections.reverseOrder())
                 .thenComparing(PosWeight::getPos))
-            .forEach(posWeight -> System.out.println(String.format("\tcom.github.davenedde.gameengine.Position %s weight: % f", posWeight.pos, posWeight.weight)));
+            .forEach(posWeight -> System.out.printf("\tcom.github.davenedde.gameengine.Position %s weight: % f%n", posWeight.pos, posWeight.weight));
     }
 
 
@@ -63,16 +63,16 @@ class GameRenderer {
 
         while (currentBoard != null && !currentBoard.getWinner().isPresent()) {
 
-            Double maxValue = -Double.MAX_VALUE;
+            double maxValue = -Double.MAX_VALUE;
             Position bestMove = null;
             Board bestBoard = null;
 
             List<Position> emptyPositions = currentBoard.getEmptyPositions();
             for (Position emptyBoardPosition : emptyPositions) {
                 Board nextBoard = currentBoard.playMove(emptyBoardPosition);
-                Double nextMoveValue = boardRewards.getRewardOtherPlayer(nextBoard);
+                double nextMoveValue = boardRewards.getRewardOtherPlayer(nextBoard);
 
-                System.out.println(String.format("\tcom.github.davenedde.gameengine.Position %s weight: % f", emptyBoardPosition, nextMoveValue));
+                System.out.printf("\tcom.github.davenedde.gameengine.Position %s weight: % f%n", emptyBoardPosition, nextMoveValue);
 
                 if (nextMoveValue > maxValue) {
                     maxValue = nextMoveValue;

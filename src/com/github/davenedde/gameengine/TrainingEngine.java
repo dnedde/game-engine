@@ -13,32 +13,57 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 class TrainingEngine {
-    /** Rate by which board rewards are propagated back up the move tree */
-    private static double TRAINING_RATE = 0.4;
+    /**
+     * Training / learning rate hyperparameter.
+     * Rate / percentage by which board rewards are propagated from the next board to the current board.
+     * <p>
+     * A too small value here can result in slow convergence during training or risks getting stuck in a local minimum or plateau.
+     * <p>
+     * A too large value here can cause the model to overshoot the optimal solution, resulting in instability or oscillation
+     * causing the loss function to increase over time.
+     * A large value can also cause the training process to diverge resulting in the loss function increasing exponentially.
+     * https://towardsdatascience.com/understanding-learning-rates-and-how-it-improves-performance-in-deep-learning-d0d4059c1c10
+     *
+     */
+    private static final double TRAINING_RATE = 0.8;
 
     /** Starting percentage of the number of random moves that will be made */
-    private static double EXPLORATORY_RATE = 1.0;
+    private static final double EXPLORATORY_RATE = 1.0;
 
-    /** Percentage that the exploratory rate will be reduced by each game played */
-    private static double EXPLORATORY_DECAY_RATE = 0.999995;
+    /** Percentage that the current exploratory rate will be reduced by each game played */
+    //private static final double EXPLORATORY_DECAY_RATE = 0.999995;
+    private static final double EXPLORATORY_DECAY_RATE = 0.99999;
 
     private static final Board STARTING_BOARD = new Board(Player.O);
     private static final List<Position> STARTING_POSITIONS = STARTING_BOARD.getEmptyPositions();
 
-    long MAX_TRAINING_GAMES = 600_000;
-    long MAX_O_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.6);
-    long MAX_X_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.8);
-    long MAX_BACKUP_GAMES = MAX_O_TRAINING_GAMES;
+    /**
+     * An upper bound on the number of training games that will be played.
+     * Training games use random/exploratory moves.
+     * A lower value here would need a larger training rate.
+     */
+    private final long MAX_TRAINING_GAMES = 200_000;
+    /** An upper bound on the number of initial games where player O will make a random, exploratory move */
+    private final long MAX_O_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.6);
+    /**
+     * An upper bound on the number of initial games where player X will make a random, exploratory move.
+     * We have X make more exploratory moves than O, so we can verify during training that X will lose games if it plays randomly.
+     * Otherwise, all games would be tied.
+     */
+    private final long MAX_X_TRAINING_GAMES = (long)(MAX_TRAINING_GAMES * 0.8);
+
+    /** Number of games to perform backweight propagation */
+    private final long MAX_BACKUP_GAMES = MAX_O_TRAINING_GAMES;
 
     /** Track number of random moves for logging */
     private long playerOMadeRandomMove = 0;
     private long playerXMadeRandomMove = 0;
 
-    BoardRewards boardRewards = new BoardRewards();
-    double currentExploratoryRate;
-    long trainingGameIndex;
+    private final BoardRewards boardRewards = new BoardRewards();
+    private double currentExploratoryRate;
+    private long trainingGameIndex;
 
-    Random random = new Random();
+    private final Random random = new Random();
 
 
     public BoardRewards train() throws IOException {
@@ -65,7 +90,7 @@ class TrainingEngine {
                     Paths.get("weights.tsv")), true)) {
 
             //printInitialMoveWeightHeader(out);
-            System.out.println(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", "i", "oWins", "xWins", "draws", "oStreak", "oRand", "xRand", "ExplRate"));
+            System.out.printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%n", "i", "oWins", "xWins", "draws", "oStreak", "oRand", "xRand", "ExplRate");
 
 
             trainingGameIndex = 0;
@@ -93,8 +118,8 @@ class TrainingEngine {
                 }
 
                 if (++trainingGameIndex % 10000 == 0) {
-                    System.out.println(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%f",
-                            trainingGameIndex, oWins, xWins, draws, oPerfectStreak, playerOMadeRandomMove, playerXMadeRandomMove, currentExploratoryRate));
+                    System.out.printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%f%n",
+                            trainingGameIndex, oWins, xWins, draws, oPerfectStreak, playerOMadeRandomMove, playerXMadeRandomMove, currentExploratoryRate);
 
                     if (xWins == 0) {
                         oPerfectStreak++;
@@ -176,6 +201,7 @@ class TrainingEngine {
     }
 
 
+    /** Adjust reward for current board based on the results from the next board */
     private void backUpValue(Board currentBoard, Board nextBoard) {
         double currentBoardValueToCurrentPlayer = boardRewards.getRewardCurrentPlayer(currentBoard);
         double nextBoardValueToCurrentPlayer = boardRewards.getRewardOtherPlayer(nextBoard);
@@ -189,7 +215,7 @@ class TrainingEngine {
     /** Will return a potentially random move using existing move weights. */
     private Optional<Position> getNextMove(Board board) {
         List<Position> nextMoves = getNextMoves(board);
-        if (nextMoves.size() > 0) {
+        if (!nextMoves.isEmpty()) {
 
             boolean explore = random.nextDouble() < currentExploratoryRate;
 
@@ -247,10 +273,10 @@ class TrainingEngine {
     }
 
     /**
-     * SoftMax weighting maps win probabilities into good values to use for determine which next move to make.
+     * SoftMax weighting maps win probabilities into good values to use for determining which next move to make.
      * We don't want to just choose the best value or the values based on the win percentages.
      * Returned values will sum to 1.0.
-     * https://en.wikipedia.org/wiki/Softmax_function
+     * <a href="https://en.wikipedia.org/wiki/Softmax_function">Softmax function</a>
      */
     public List<Double> getNextMoveSoftMaxWeights(Board currentBoard, List<Position> nextMoves, Player currentPlayer) {
         // SoftMax is the exp() of each current weight value...

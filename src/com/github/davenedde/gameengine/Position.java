@@ -3,10 +3,10 @@ package com.github.davenedde.gameengine;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-/** A position on the board */
+/** A position on the game board */
 class Position implements Comparable<Position> {
-    private int row;
-    private int col;
+    private final int row;
+    private final int col;
 
     public Position(int row, int col) {
         this.row = row;
@@ -31,10 +31,11 @@ class Position implements Comparable<Position> {
     }
 
     public static Position fromString(String positionString) {
-        Integer positionNumber = Integer.parseInt(positionString);
+        int positionNumber = Integer.parseInt(positionString);
         return new Position(positionToRow(positionNumber), positionToCol(positionNumber));
     }
 
+    /** Convert a value from 1..9 for each position on the board, starting from upper-left in a row-by-row ordering to a Position */
     static Position fromPositionNumber(int positionNumber) {
         return new Position(positionToRow(positionNumber), positionToCol(positionNumber));
     }
@@ -44,13 +45,14 @@ class Position implements Comparable<Position> {
         return toPositionNumber();
     }
 
+    /** Return a value from 1..9 for each position on the board, starting from upper-left in a row-by-row ordering */
     int toPositionNumber() {
         return col + 1 + row * Board.COLS;
     }
 
     public static Stream<Position> stream() {
         return IntStream.range(1, Board.ROWS * Board.COLS + 1)
-            .mapToObj(positionNumber -> fromPositionNumber(positionNumber));
+            .mapToObj(Position::fromPositionNumber);
     }
 
 
